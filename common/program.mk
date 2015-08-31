@@ -1,0 +1,110 @@
+ifndef TOPDIR
+$(error "TOPDIR must be defined")
+endif
+
+ifdef NETWORK_TEST
+TEST=${NETWORK_TEST}
+endif
+
+ifdef SKIP_NETWORK_TESTS
+SKIP_TESTS=${SKIP_NETWORK_TESTS}
+endif
+
+ifdef TEST
+ifndef SKIP_TESTS
+PROGRAM=${TEST}
+SRCS+=${TEST}.cc
+
+all: ${PROGRAM}
+
+# Build and run regression tests.
+regress: ${PROGRAM}
+ifdef TEST_WRAPPER
+	${TEST_WRAPPER} ${PWD}/${PROGRAM}
+else
+	${PWD}/${PROGRAM}
+endif
+else
+# Build but don't run regression tests.
+regress: ${PROGRAM}
+endif
+else
+ifndef PROGRAM
+$(error "Must have a program to build.")
+endif
+
+all: ${PROGRAM}
+
+# Not a regression test, do nothing.
+regress:
+	@true
+endif
+
+.PHONY: regress
+
+OSNAME:=$(shell uname -s)
+
+CFLAGS+=-pipe
+CPPFLAGS+=-I${TOPDIR}
+ifdef NDEBUG
+CFLAGS+=-O2
+CPPFLAGS+=-DNDEBUG=1
+else
+CFLAGS+=-O0
+ifneq "${OSNAME}" "SunOS"
+CFLAGS+=-g
+endif
+endif
+
+# OpenBSD needs no -Werror.
+ifeq "${OSNAME}" "OpenBSD"
+NO_WERROR=1
+endif
+
+# Linux needs no -Werror because the epoll headers are terrible.
+# XXX Should just disable -Werror for the one file using epoll.
+ifeq "${OSNAME}" "Linux"
+NO_WERROR=1
+endif
+
+#CFLAGS+=--std gnu++0x
+#CFLAGS+=-pedantic
+CFLAGS+=-W -Wall
+ifndef NO_WERROR
+CFLAGS+=-Werror
+endif
+CFLAGS+=-Wno-system-headers
+CFLAGS+=-Wno-unused-parameter
+CFLAGS+=-Wno-switch
+CFLAGS+=-Wno-uninitialized
+CFLAGS+=-Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings -Wshadow -Wcast-align -Wchar-subscripts -Wreorder
+#CFLAGS+=-Winline
+CXXFLAGS+=-Wno-deprecated
+CXXFLAGS+=-Wnon-virtual-dtor
+
+$(foreach _lib,${USE_LIBS},$(eval include ${TOPDIR}/$(strip ${_lib})/lib.mk))
+
+define __library_conditionals
+ifdef CFLAGS_${1}
+CFLAGS+=${CFLAGS_${1}}
+endif
+ifdef SRCS_${1}
+SRCS+=	${SRCS_${1}}
+endif
+endef
+
+$(foreach _lib,${USE_LIBS},$(eval $(call __library_conditionals,$(subst /,_,${_lib}))))
+
+OBJS+=  $(patsubst %.cc,bin/%.o,$(patsubst %.c,bin/%.o,${SRCS}))
+
+${PROGRAM}: ${OBJS}
+	${CXX} ${CXXFLAGS} ${CFLAGS} ${LDFLAGS} -o bin/$@ ${OBJS} ${LDADD}
+
+bin/%.o: %.cc
+	${CXX} ${CPPFLAGS} ${CXXFLAGS} ${CFLAGS} -c -o $@ $<
+
+bin/%.o: %.c
+	${CC} ${CPPFLAGS} ${CFLAGS} -c -o $@ $<
+
+clean:
+	rm -f ${PROGRAM} ${OBJS}

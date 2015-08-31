@@ -1,0 +1,20 @@
+WANProxy XTech version 3.0
+==========================
+
+This is an efficiency-oriented light-weight version of the original WANProxy as released by Juli Mallett on 2013, modified later by Diego Woitasen to add a persistent cache on disk based on Squid COSS patterns.
+
+The main objectives of this version have been:
+
+1. Introduce a multithreaded structure with a helper thread servicing network connections while the main thread takes care of the whole data processing.
+
+2. Simplify the data flow on the main thread using direct calls instead of callbacks to increase performance and reduce memory usage, so that servers can support hundreds of clients and clients can run on light network appliances.
+
+3. Optimize the persistent cache on disk making indices faster, avoiding duplication of segments and reusing disk space based on LRU criteria in order to keep data cached as long as it can be useful.
+
+Only the core wanproxy program is included here without any associated utilities or additional functionalities not essential to its basic operation mode, to be able to optimize this one as much as possible.
+
+This version has been originated, sponsored and advised by XTech.
+
+
+
+
