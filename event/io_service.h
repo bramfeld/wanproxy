@@ -12,7 +12,9 @@
 #define	EVENT_IO_SERVICE_H
 
 #include <unistd.h>
+#include <sys/time.h>
 #include <map>
+#include <deque>
 #include <common/buffer.h>
 #include <common/ring_buffer.h>
 #include <common/thread/thread.h>
@@ -22,6 +24,7 @@
 
 #define IO_READ_BUFFER_SIZE	0x10000
 #define IO_POLL_EVENT_COUNT	512
+#define IO_POLL_TIMEOUT			150		
 
 struct IoNode
 {
@@ -32,6 +35,12 @@ struct IoNode
 	EventAction* write_action;
 };
 
+struct WaitNode
+{
+	long limit;
+	EventAction* action;
+};
+
 class IoService : public Thread 
 {
 private:
@@ -39,7 +48,10 @@ private:
 	RingBuffer<EventMessage> gateway_;
 	uint8_t read_pool_[IO_READ_BUFFER_SIZE];
 	std::map<int, IoNode> fd_map_;
-	int handle_, rfd_, wfd_;
+	std::deque<WaitNode> wait_list_;
+	int timeout_;
+	int handle_;
+	int rfd_, wfd_;
 	
 public:
 	IoService ();
@@ -56,6 +68,7 @@ private:
 	bool close_channel (int fd, Event& ev);
 	void track (EventAction* act);
 	void cancel (EventAction* act);
+	void wakeup_readers ();
 	void schedule (EventAction* act);
 	void terminate (EventAction* act);
 	
@@ -68,6 +81,8 @@ public:
 	bool idle () const									{ return fd_map_.empty (); }
 	void wakeup ()											{ ::write (wfd_, "*", 1); }
 	void take_message (const EventMessage& msg)	{ gateway_.write (msg); wakeup (); }
+	long current_time ()									{ struct timeval tv; gettimeofday (&tv, 0); 
+																  return ((tv.tv_sec & 0xFF) * 1000 + tv.tv_usec / 1000); }
 };
 
 #endif /* !EVENT_IO_SERVICE_H */

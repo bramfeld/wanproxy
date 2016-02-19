@@ -13,6 +13,8 @@
 
 #include <set>
 #include <common/filter.h>
+#include <event/event.h>
+#include <event/action.h>
 #include <xcodec/xcodec.h>
 #include <xcodec/xcodec_cache.h>
 #include <xcodec/xcodec_hash.h>
@@ -24,22 +26,30 @@ class EncodeFilter : public BufferedFilter
 private:
    XCodecCache* cache_;
 	XCodecEncoder* encoder_;
+	Action* wait_action_;
+	bool waiting_;
 	bool sent_eos_;
 	bool eos_ack_;
    
 public:
-	EncodeFilter (const LogHandle& log, XCodecCache* cc) : BufferedFilter (log) 
+	EncodeFilter (const LogHandle& log, XCodecCache* cc, int flg = 0) : BufferedFilter (log) 
 	{ 
-		cache_ = cc; encoder_ = 0; sent_eos_ = eos_ack_ = false;
+		cache_ = cc; encoder_ = 0; wait_action_ = 0; waiting_ = (flg & 1); sent_eos_ = eos_ack_ = false;
 	}
 	
 	virtual ~EncodeFilter ()  
 	{ 
+		if (wait_action_)
+			wait_action_->cancel ();
 		delete encoder_; 
 	}
   
    virtual bool consume (Buffer& buf);
    virtual void flush (int flg);
+	
+private:
+	void encode_frame (Buffer& src, Buffer& trg);
+	void on_read_timeout (Event e);
 };
 
 class DecodeFilter : public LogisticFilter

@@ -26,6 +26,8 @@
 #ifndef	XCODEC_XCODEC_ENCODER_H
 #define	XCODEC_XCODEC_ENCODER_H
 
+#include <xcodec/xcodec_hash.h>
+
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
 // File:           xcodec_encoder.h                                           //
@@ -42,16 +44,22 @@ class XCodecEncoder
 {
 	LogHandle log_;
 	XCodecCache* cache_;
+	Buffer source_;
+	XCodecHash xcodec_hash_;
+	int candidate_start_;
+	uint64_t candidate_symbol_;
 
 public:
 	XCodecEncoder(XCodecCache*);
 	~XCodecEncoder();
 
-	void encode (Buffer&, Buffer&);
+	void encode (Buffer&, Buffer&, bool);
+	bool flush (Buffer&);
+	
 private:
-	void encode_declaration (Buffer&, Buffer&, unsigned, unsigned, uint64_t);
-	void encode_escape (Buffer&, Buffer&, unsigned, unsigned);
-	bool encode_reference (Buffer&, Buffer&, unsigned, unsigned, uint64_t, Buffer&);
+	void encode_declaration (Buffer&, Buffer&, unsigned, uint64_t);
+	void encode_escape (Buffer&, Buffer&, unsigned);
+	bool encode_reference (Buffer&, Buffer&, unsigned, uint64_t, Buffer&);
 };
 
 #endif /* !XCODEC_XCODEC_ENCODER_H */

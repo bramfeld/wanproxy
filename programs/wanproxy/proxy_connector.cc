@@ -48,7 +48,7 @@ ProxyConnector::ProxyConnector (const std::string& name,
 			 SocketAddressFamily family,
 			 const std::string& remote_name,
 			 bool cln, bool ssh)
- : log_("/wanproxy/proxy/" + name + "/connector"),
+ : log_("/wanproxy/" + name + "/connector"),
    interface_codec_(interface_codec),
    remote_codec_(remote_codec),
    local_socket_(local_socket),
@@ -151,7 +151,7 @@ bool ProxyConnector::build_chains (WANProxyCodec* cdc1, WANProxyCodec* cdc2, Soc
       {
 			EncodeFilter* enc; DecodeFilter* dec;
 			request_chain_.append ((dec = new DecodeFilter ("/wanproxy/" + cdc1->name_ + "/dec", cdc1->xcache_)));
-			response_chain_.prepend ((enc = new EncodeFilter ("/wanproxy/" + cdc1->name_ + "/enc", cdc1->xcache_)));
+			response_chain_.prepend ((enc = new EncodeFilter ("/wanproxy/" + cdc1->name_ + "/enc", cdc1->xcache_, 1)));
          dec->set_upstream (enc);
 		}
 

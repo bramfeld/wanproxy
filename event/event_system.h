@@ -35,6 +35,7 @@ enum StreamMode
 	StreamModeAccept,
 	StreamModeRead,
 	StreamModeWrite,
+	StreamModeWait,
 	StreamModeEnd
 };
 

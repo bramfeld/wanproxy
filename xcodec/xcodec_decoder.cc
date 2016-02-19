@@ -72,8 +72,8 @@ XCodecDecoder::~XCodecDecoder()
  * instance UUID in the HELLO message and can tell which streams
  * share an originator.
  */
-bool
-XCodecDecoder::decode (Buffer& output, Buffer& input, std::set<uint64_t>& unknown_hashes)
+
+bool XCodecDecoder::decode (Buffer& output, Buffer& input, std::set<uint64_t>& unknown_hashes)
 {
 	uint8_t data[XCODEC_SEGMENT_LENGTH];
 	Buffer old;

@@ -25,6 +25,7 @@
 
 #include <common/buffer.h>
 #include <common/endian.h>
+#include <event/event_system.h>
 #include <programs/wanproxy/wanproxy.h>
 #include "xcodec_filter.h"
 
@@ -120,8 +121,7 @@
 
 bool EncodeFilter::consume (Buffer& buf)
 {
-	Buffer output;
-	Buffer enc;
+	Buffer enc, output;
 
 	ASSERT(log_, ! flushing_);
 
@@ -143,26 +143,18 @@ bool EncodeFilter::consume (Buffer& buf)
 			return false;
 	}
 
-	encoder_->encode (enc, buf);
-
-	while (! enc.empty ()) 
-	{
-		int n = enc.length ();
-		if (n > XCODEC_PIPE_MAX_FRAME)
-			n = XCODEC_PIPE_MAX_FRAME;
-			
-		Buffer frame;
-		enc.moveout (&frame, n);
-		
-		uint16_t len = n;
-		len = BigEndian::encode (len);
-
-		output.append (XCODEC_PIPE_OP_FRAME);
-		output.append (&len);
-		output.append (frame);
-	}
+	encoder_->encode (enc, buf, waiting_);
+	while (! enc.empty ())
+		encode_frame (enc, output);
    
-   return produce (output);
+	if (waiting_)
+	{
+		if (wait_action_)
+			wait_action_->cancel ();
+		wait_action_ = event_system.track (150, StreamModeWait, callback (this, &EncodeFilter::on_read_timeout));
+	}
+
+   return (! output.empty () ? produce (output) : true);
 }
 	
 void EncodeFilter::flush (int flg)
@@ -175,13 +167,44 @@ void EncodeFilter::flush (int flg)
 		flush_flags_ |= flg;
 		if (! sent_eos_)
 		{
-			Buffer output;
+			Buffer enc, output;
+			if (waiting_ && encoder_ && encoder_->flush (enc))
+				encode_frame (enc, output);
 			output.append (XCODEC_PIPE_OP_EOS);
 			sent_eos_ = produce (output);
 		}
 	}
 	if (flushing_ && eos_ack_)
 		Filter::flush (flush_flags_);
+}
+
+void EncodeFilter::encode_frame (Buffer& src, Buffer& trg)
+{
+	int n = src.length ();
+	if (n > XCODEC_PIPE_MAX_FRAME)
+		n = XCODEC_PIPE_MAX_FRAME;
+
+	uint16_t len = n;
+	len = BigEndian::encode (len);
+
+	trg.append (XCODEC_PIPE_OP_FRAME);
+	trg.append (&len);
+	trg.append (src, n);
+	
+	src.skip (n);
+}
+
+void EncodeFilter::on_read_timeout (Event e)
+{
+	if (wait_action_)
+		wait_action_->cancel (), wait_action_ = 0;
+
+	Buffer enc, output;
+	if (encoder_ && encoder_->flush (enc))
+	{
+		encode_frame (enc, output);
+		produce (output);
+	}
 }
 
 // Decoding

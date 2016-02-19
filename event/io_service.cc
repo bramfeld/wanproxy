@@ -19,7 +19,7 @@
 
 IoService::IoService () : Thread ("IoService"), log_ ("/io/thread")
 {
-	handle_ = rfd_ = wfd_ = -1;
+	timeout_ = handle_ = rfd_ = wfd_ = -1;
 	
 	int fd[2];
 	if (::pipe (fd) == 0)
@@ -54,7 +54,10 @@ void IoService::main ()
 				cancel (msg.action);
 		}
 				
-		poll (-1);
+		poll (timeout_);
+		
+		if (timeout_ > 0)
+			wakeup_readers ();
 	}
 
 	set_fd (rfd_, -1, 0);
@@ -81,32 +84,40 @@ void IoService::handle_request (EventAction* act)
 				schedule (act);
 			else
 				track (act);
-			return;
+			break;
 			
 		case StreamModeAccept:
 			track (act);
-			return;
+			break;
 			
 		case StreamModeRead:
 			if (read_channel (act->fd_, (act->callback_ ? act->callback_->param () : ev), 1))
 				schedule (act);
 			else
 				track (act);
-			return;
+			break;
 			
 		case StreamModeWrite:
 			if (write_channel (act->fd_, (act->callback_ ? act->callback_->param () : ev)))
 				schedule (act);
 			else
 				track (act);
-			return;
+			break;
+			
+		case StreamModeWait:
+			{
+				WaitNode node = {current_time () + act->fd_, act};
+				wait_list_.insert (wait_list_.end (), node);
+				timeout_ = IO_POLL_TIMEOUT;
+			}
+			break;
 			
 		case StreamModeEnd:
 			if (close_channel (act->fd_, (act->callback_ ? act->callback_->param () : ev)))
 				schedule (act);
 			else
 				track (act);
-			return;
+			break;
 		}
 	}
 }
@@ -125,6 +136,7 @@ bool IoService::connect_channel (int fd, Event& ev)
 	case 0:
 		ev.type_ = Event::Done;
 		break;
+		
 	case -1:
 		switch (errno) 
 		{
@@ -279,41 +291,63 @@ void IoService::track (EventAction* act)
 void IoService::cancel (EventAction* act)
 {
 	std::map<int, IoNode>::iterator it;
-	int fd;
+	std::deque<WaitNode>::iterator w;
 	
 	if (act)
 	{
-		fd = act->fd_;
-		it = fd_map_.find (fd);
-		
 		switch (act->mode_) 
 		{
 		case StreamModeAccept:
 		case StreamModeRead:
+			it = fd_map_.find (act->fd_);
 			if (it != fd_map_.end () && it->second.read_action == act) 
 			{
 				it->second.reading = false, it->second.read_action = 0;
 				if (it->second.write_action == 0)
 					fd_map_.erase (it);
-				set_fd (fd, -1, (it->second.writing ? 2 : 0), &it->second);
+				set_fd (act->fd_, -1, (it->second.writing ? 2 : 0), &it->second);
 			}
 			break;
 			
 		case StreamModeConnect:
 		case StreamModeWrite:
 		case StreamModeEnd:
+			it = fd_map_.find (act->fd_);
 			if (it != fd_map_.end () && it->second.write_action == act) 
 			{
 				it->second.writing = false, it->second.write_action = 0;
 				if (it->second.read_action == 0)
 					fd_map_.erase (it);
-				set_fd (fd, (it->second.reading ? 2 : 0), -1, &it->second);
+				set_fd (act->fd_, (it->second.reading ? 2 : 0), -1, &it->second);
 			}
+			break;
+			
+		case StreamModeWait:
+			for (w = wait_list_.begin (); w != wait_list_.end (); ++w)
+			{
+				if (w->action == act)
+				{
+					wait_list_.erase (w);
+					break;
+				}
+			}
+			if (wait_list_.empty ())
+				timeout_ = -1;
 			break;
 		}
 		
 		terminate (act);
 	}
+}
+
+void IoService::wakeup_readers ()
+{
+	std::deque<WaitNode>::iterator w;
+	long t = current_time ();
+	
+	for (w = wait_list_.begin (); w != wait_list_.end (); ++w)
+		if (w->limit > 0 && w->limit <= t)
+			schedule (w->action), w->limit = 0; 
 }
 
 void IoService::schedule (EventAction* act)
