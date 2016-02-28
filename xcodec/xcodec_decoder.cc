@@ -38,7 +38,7 @@
 // Description:    decoding routines for the xcodex protocol                  //
 // Project:        WANProxy XTech                                             //
 // Adapted by:     Andreu Vidal Bramfeld-Software                             //
-// Last modified:  2015-08-31                                                 //
+// Last modified:  2016-02-28                                                 //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 

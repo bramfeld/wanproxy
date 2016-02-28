@@ -41,7 +41,7 @@
 // Description:    SSH encryption/decryption inside a data filter pair        //
 // Project:        WANProxy XTech                                             //
 // Adapted by:     Andreu Vidal Bramfeld-Software                             //
-// Last modified:  2015-04-01                                                 //
+// Last modified:  2016-02-28                                                 //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -63,13 +63,13 @@ SSH::EncryptFilter::EncryptFilter (SSH::Role role, int flg) : BufferedFilter ("/
 		session_.algorithm_negotiation_->add_algorithm (SSH::ServerHostKey::server (&session_, "ssh-server1.pem"));
 	session_.algorithm_negotiation_->add_algorithms ();
 	
-	Buffer str ("SSH-2.0-WANProxy " + (std::string)log_);
+	Buffer str ("SSH-2.0-WANProxy " + (std::string) log_);
 	session_.local_version (str);
 	str.append ("\r\n");
 	Filter::produce (str);
 }
 
-bool SSH::EncryptFilter::consume (Buffer& buf)
+bool SSH::EncryptFilter::consume (Buffer& buf, int flg)
 {
 	buf.moveout (&pending_);
 	
@@ -83,7 +83,7 @@ bool SSH::EncryptFilter::consume (Buffer& buf)
 			Buffer packet;
 			packet.append (SSHStreamPacket);
 			pending_.moveout (&packet);
-			return produce (packet);
+			return produce (packet, flg);
 		} 
 		else 
 		{
@@ -100,7 +100,7 @@ bool SSH::EncryptFilter::consume (Buffer& buf)
 
 				Buffer packet;
 				pending_.moveout (&packet, sizeof length, length);
-				if (! produce (packet))
+				if (! produce (packet, flg))
 					return false;
 			}
 		}
@@ -109,7 +109,7 @@ bool SSH::EncryptFilter::consume (Buffer& buf)
 	return true;
 }
 	
-bool SSH::EncryptFilter::produce (Buffer& buf)
+bool SSH::EncryptFilter::produce (Buffer& buf, int flg)
 {
 	Encryption *encryption_algorithm;
 	MAC *mac_algorithm;
@@ -168,7 +168,7 @@ bool SSH::EncryptFilter::produce (Buffer& buf)
 
 	session_.local_sequence_number_++;
 
-	return Filter::produce (packet);
+	return Filter::produce (packet, flg);
 }
 
 void SSH::EncryptFilter::flush (int flg)
@@ -198,7 +198,7 @@ SSH::DecryptFilter::DecryptFilter (int flg) : LogisticFilter ("/ssh/decrypt")
 	identified_ = false;
 }
 
-bool SSH::DecryptFilter::consume (Buffer& buf)
+bool SSH::DecryptFilter::consume (Buffer& buf, int flg)
 {
 	buf.moveout (&pending_);
 
@@ -500,7 +500,7 @@ bool SSH::DecryptFilter::consume (Buffer& buf)
 			packet = b;
 		}
 		
-		return produce (packet);
+		return produce (packet, flg);
 	}
 	
 	return true;

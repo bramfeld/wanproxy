@@ -34,11 +34,11 @@
 // Description:    session start and global application management            //
 // Project:        WANProxy XTech                                             //
 // Adapted by:     Andreu Vidal Bramfeld-Software                             //
-// Last modified:  2015-08-31                                                 //
+// Last modified:  2016-02-28                                                 //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-#define PROGRAM_VERSION		"3.0"
+#define PROGRAM_VERSION		"3.02"
 
 WanProxyCore wanproxy;	
 

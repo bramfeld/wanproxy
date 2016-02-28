@@ -29,6 +29,7 @@
 #include <ssh/ssh_filter.h>
 #include <xcodec/xcodec_filter.h>
 #include <zlib/zlib_filter.h>
+#include <common/count_filter.h>
 #include "proxy_connector.h"
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -37,19 +38,19 @@
 // Description:    carries data between endpoints through a filter chain      //
 // Project:        WANProxy XTech                                             //
 // Adapted by:     Andreu Vidal Bramfeld-Software                             //
-// Last modified:  2015-08-31                                                 //
+// Last modified:  2016-02-28                                                 //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
 ProxyConnector::ProxyConnector (const std::string& name,
-          WANProxyCodec* interface_codec,
+          WANProxyCodec* local_codec,
 			 WANProxyCodec* remote_codec,
           Socket* local_socket,
 			 SocketAddressFamily family,
 			 const std::string& remote_name,
 			 bool cln, bool ssh)
  : log_("/wanproxy/" + name + "/connector"),
-   interface_codec_(interface_codec),
+   local_codec_(local_codec),
    remote_codec_(remote_codec),
    local_socket_(local_socket),
    remote_socket_(0),
@@ -61,7 +62,8 @@ ProxyConnector::ProxyConnector (const std::string& name,
    stop_action_(0),
 	request_action_(0),
 	response_action_(0),
-	chain_ready_(0)
+	close_action_(0),
+	flushing_(0)
 {
 	if (local_socket_ && (remote_socket_ = Socket::create (family, SocketTypeStream, "tcp", remote_name)))
 	{
@@ -70,7 +72,7 @@ ProxyConnector::ProxyConnector (const std::string& name,
 	}
 	else
 	{
-		conclude ();
+		close_action_ = event_system.track (0, StreamModeWait, callback (this, &ProxyConnector::conclude));
 	}
 }
 
@@ -84,6 +86,8 @@ ProxyConnector::~ProxyConnector ()
       request_action_->cancel ();
    if (response_action_)
       response_action_->cancel ();
+	if (close_action_)
+		close_action_->cancel ();
 	if (local_socket_)
 		local_socket_->close ();
 	if (remote_socket_)
@@ -103,15 +107,15 @@ void ProxyConnector::connect_complete (Event e)
 		break;
 	case Event::Error:
 		INFO(log_) << "Connect failed: " << e;
-		conclude ();
+		conclude (e);
 		return;
 	default:
 		ERROR(log_) << "Unexpected event: " << e;
-		conclude ();
+		conclude (e);
 		return;
 	}
 
-   if (build_chains (interface_codec_, remote_codec_, local_socket_, remote_socket_))
+   if (build_chains (local_codec_, remote_codec_, local_socket_, remote_socket_))
 	{
 		request_action_ = local_socket_->read (callback (this, &ProxyConnector::on_request_data));
 		response_action_ = remote_socket_->read (callback (this, &ProxyConnector::on_response_data));
@@ -158,7 +162,7 @@ bool ProxyConnector::build_chains (WANProxyCodec* cdc1, WANProxyCodec* cdc2, Soc
 		if (cdc1->counting_) 
       {
 			request_chain_.append (new CountFilter (cdc1->request_output_bytes_));
-			response_chain_.prepend (new CountFilter (cdc1->response_input_bytes_));
+			response_chain_.prepend (new CountFilter (cdc1->response_input_bytes_, 1));
 		}
 	}
 
@@ -208,6 +212,8 @@ void ProxyConnector::on_request_data (Event e)
 {
 	if (request_action_)
 		request_action_->cancel (), request_action_ = 0;
+	if (flushing_ & REQUEST_CHAIN_FLUSHING)
+		return;
 		
 	switch (e.type_) 
 	{
@@ -217,11 +223,12 @@ void ProxyConnector::on_request_data (Event e)
 			break;
 	case Event::EOS:
 		DEBUG(log_) << "Flushing request";
+		flushing_ |= REQUEST_CHAIN_FLUSHING;
 		request_chain_.flush (REQUEST_CHAIN_READY);
 		break;
 	default:
 		DEBUG(log_) << "Unexpected event: " << e;
-		conclude ();
+		conclude (e);
 		return;
 	}
 }
@@ -230,6 +237,8 @@ void ProxyConnector::on_response_data (Event e)
 {
 	if (response_action_)
 		response_action_->cancel (), response_action_ = 0;
+	if (flushing_ & RESPONSE_CHAIN_FLUSHING)
+		return;
 		
 	switch (e.type_) 
 	{
@@ -239,23 +248,25 @@ void ProxyConnector::on_response_data (Event e)
 			break;
 	case Event::EOS:
 		DEBUG(log_) << "Flushing response";
+		flushing_ |= RESPONSE_CHAIN_FLUSHING;
 		response_chain_.flush (RESPONSE_CHAIN_READY);
 		break;
 	default:
 		DEBUG(log_) << "Unexpected event: " << e;
-		conclude ();
+		conclude (e);
 		return;
 	}
 }
 
 void ProxyConnector::flush (int flg)
 {
-	chain_ready_ |= flg;
-	if ((chain_ready_ & REQUEST_CHAIN_READY) && (chain_ready_ & RESPONSE_CHAIN_READY))
-		conclude ();
+	flushing_ |= flg;
+	if ((flushing_ & (REQUEST_CHAIN_READY | RESPONSE_CHAIN_READY)) == (REQUEST_CHAIN_READY | RESPONSE_CHAIN_READY))
+		if (! close_action_)
+			close_action_ = event_system.track (0, StreamModeWait, callback (this, &ProxyConnector::conclude));
 }
 
-void ProxyConnector::conclude ()
+void ProxyConnector::conclude (Event e)
 {
    delete this;
 }

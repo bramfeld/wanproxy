@@ -4,7 +4,7 @@
 // Description:    SSH encryption/decryption inside a data filter pair        //
 // Project:        WANProxy XTech                                             //
 // Author:         Andreu Vidal Bramfeld-Software                             //
-// Last modified:  2015-04-01                                                 //
+// Last modified:  2016-02-28                                                 //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -28,8 +28,8 @@ namespace SSH
 	public:
 		EncryptFilter (Role role, int flg = 0);
 
-		virtual bool consume (Buffer& buf);
-		virtual bool produce (Buffer& buf);
+		virtual bool consume (Buffer& buf, int flg = 0);
+		virtual bool produce (Buffer& buf, int flg = 0);
 		virtual void flush (int flg);
 		
 		Session* current_session ()   { return &session_; }
@@ -45,7 +45,7 @@ namespace SSH
 	public:
 		DecryptFilter (int flg = 0);
 
-		virtual bool consume (Buffer& buf);
+		virtual bool consume (Buffer& buf, int flg = 0);
 		virtual void flush (int flg);
 		
 		void set_encrypter (EncryptFilter* f)   { session_ = (f ? f->current_session () : 0); set_upstream (f); }

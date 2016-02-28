@@ -4,7 +4,7 @@
 // Description:    instantiation of encoder/decoder in a data filter pair     //
 // Project:        WANProxy XTech                                             //
 // Author:         Andreu Vidal Bramfeld-Software                             //
-// Last modified:  2015-08-31                                                 //
+// Last modified:  2016-02-28                                                 //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -44,7 +44,7 @@ public:
 		delete encoder_; 
 	}
   
-   virtual bool consume (Buffer& buf);
+   virtual bool consume (Buffer& buf, int flg = 0);
    virtual void flush (int flg);
 	
 private:
@@ -77,7 +77,7 @@ public:
 		delete decoder_; 
 	}
   
-   virtual bool consume (Buffer& buf);
+   virtual bool consume (Buffer& buf, int flg = 0);
    virtual void flush (int flg);
 };
 

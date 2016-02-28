@@ -1,31 +1,38 @@
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
-// File:           sink_filter.h                                              //
-// Description:    a filter to write into a target device                     //
+// File:           count_filter.h                                             //
+// Description:    byte counting filter for wanproxy streams                  //
 // Project:        WANProxy XTech                                             //
 // Author:         Andreu Vidal Bramfeld-Software                             //
 // Last modified:  2016-02-28                                                 //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-#include <common/filter.h>
-#include <event/action.h>
-#include <event/event.h>
-#include <io/socket/socket.h>
+#ifndef	COUNT_FILTER_H
+#define	COUNT_FILTER_H
 
-class SinkFilter : public BufferedFilter
+#include <common/types.h>
+#include <common/filter.h>
+
+#define TO_BE_CONTINUED  1
+
+class CountFilter : public Filter
 {
 private:
-   Socket* sink_;
-	Action* write_action_;
-	bool client_, down_, closing_;
+	Buffer header_;
+   intmax_t& total_count_;
+	intmax_t expected_;
+	intmax_t count_;
+	int state_;
    
 public:
-	SinkFilter (const LogHandle& log, Socket* sck, bool cln = 0);
-	virtual ~SinkFilter ();
-   
+   CountFilter (intmax_t& p, int flg = 0);
+	
    virtual bool consume (Buffer& buf, int flg = 0);
-	void write_complete (Event e);
    virtual void flush (int flg);
+	
+private:
+	bool explore_stream (Buffer& buf);
 };
 
+#endif  //	COUNT_FILTER_H

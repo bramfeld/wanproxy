@@ -4,7 +4,7 @@
 // Description:    data filters for zlib inflate/deflate streams              //
 // Project:        WANProxy XTech                                             //
 // Author:         Andreu Vidal Bramfeld-Software                             //
-// Last modified:  2015-04-01                                                 //
+// Last modified:  2016-02-28                                                 //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -27,7 +27,7 @@ public:
    DeflateFilter (int level = 0);
    virtual ~DeflateFilter ();
 
-   virtual bool consume (Buffer& buf);
+   virtual bool consume (Buffer& buf, int flg = 0);
    virtual void flush (int flg);
 };
 
@@ -41,7 +41,7 @@ public:
    InflateFilter ();
   ~InflateFilter ();
 
-   virtual bool consume (Buffer& buf);
+   virtual bool consume (Buffer& buf, int flg = 0);
    virtual void flush (int flg);
 };
 

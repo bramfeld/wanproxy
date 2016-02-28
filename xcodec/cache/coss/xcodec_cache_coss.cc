@@ -23,7 +23,7 @@
 // Description:    persistent cache on disk for xcodec protocol streams       //
 // Project:        WANProxy XTech                                             //
 // Adapted by:     Andreu Vidal Bramfeld-Software                             //
-// Last modified:  2015-08-31                                                 //
+// Last modified:  2016-02-28                                                 //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -61,6 +61,9 @@ XCodecCacheCOSS::XCodecCacheCOSS (const UUID& uuid, const std::string& cache_dir
 	directory_ = new COSSMetadata[stripe_limit_];
 	memset (directory_, 0, sizeof (COSSMetadata) * stripe_limit_);
 	
+	if (stream_.rdbuf())
+		stream_.rdbuf()->pubsetbuf (0, 0);
+		  
 	stream_.open (file_path_.c_str(), fstream::in | fstream::out | fstream::binary);
 	if (! read_file ())
 	{

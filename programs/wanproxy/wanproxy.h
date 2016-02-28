@@ -4,7 +4,7 @@
 // Description:    global data for the wanproxy application                   //
 // Project:        WANProxy XTech                                             //
 // Author:         Andreu Vidal Bramfeld-Software                             //
-// Last modified:  2015-08-31                                                 //
+// Last modified:  2016-02-28                                                 //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -109,10 +109,31 @@ public:
 		if (reload_action_)
 			reload_action_->cancel (), reload_action_ = 0;
 		delete listener_; listener_ = 0;
+		print_stream_counts ();
 		std::map<UUID, XCodecCache*>::iterator it;
 		for (it = caches_.begin(); it != caches_.end(); it++)
 			delete it->second;
 		caches_.clear ();
+		
+	}
+	
+	void print_stream_counts ()
+	{
+		if (local_codec_.counting_)
+		{
+			INFO("wanproxy/core") << "Local codec request input bytes:    " << local_codec_.request_input_bytes_;
+			INFO("wanproxy/core") << "Local codec request output bytes:   " << local_codec_.request_output_bytes_;
+			INFO("wanproxy/core") << "Local codec response input bytes:   " << local_codec_.response_input_bytes_;
+			INFO("wanproxy/core") << "Local codec response output bytes:  " << local_codec_.response_output_bytes_;
+		}
+		
+		if (remote_codec_.counting_)
+		{
+			INFO("wanproxy/core") << "Remote codec request input bytes:   " << remote_codec_.request_input_bytes_;
+			INFO("wanproxy/core") << "Remote codec request output bytes:  " << remote_codec_.request_output_bytes_;
+			INFO("wanproxy/core") << "Remote codec response input bytes:  " << remote_codec_.response_input_bytes_;
+			INFO("wanproxy/core") << "Remote codec response output bytes: " << remote_codec_.response_output_bytes_;
+		}
 	}
 };
 

@@ -36,7 +36,7 @@
 // Description:    encoding routines for the xcodex protocol                  //
 // Project:        WANProxy XTech                                             //
 // Adapted by:     Andreu Vidal Bramfeld-Software                             //
-// Last modified:  2015-08-31                                                 //
+// Last modified:  2016-02-28                                                 //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -57,7 +57,7 @@ XCodecEncoder::~XCodecEncoder()
  * escaped.
  */
 
-void XCodecEncoder::encode (Buffer& output, Buffer& input, bool wait)
+void XCodecEncoder::encode (Buffer& output, Buffer& input)
 {
 	int off = source_.length ();
 	Buffer old;
@@ -170,9 +170,6 @@ void XCodecEncoder::encode (Buffer& output, Buffer& input, bool wait)
 			}
 		}
 	}
-	
-	if (! wait)
-		flush (output);
 }
 
 bool XCodecEncoder::flush (Buffer& output)

@@ -34,7 +34,7 @@
 // Description:    encoding routines for the xcodex protocol                  //
 // Project:        WANProxy XTech                                             //
 // Adapted by:     Andreu Vidal Bramfeld-Software                             //
-// Last modified:  2015-08-31                                                 //
+// Last modified:  2016-02-28                                                 //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -53,7 +53,7 @@ public:
 	XCodecEncoder(XCodecCache*);
 	~XCodecEncoder();
 
-	void encode (Buffer&, Buffer&, bool);
+	void encode (Buffer&, Buffer&);
 	bool flush (Buffer&);
 	
 private:

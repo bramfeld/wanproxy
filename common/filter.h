@@ -4,7 +4,7 @@
 // Description:    base classes for chained data processors                   //
 // Project:        WANProxy XTech                                             //
 // Author:         Andreu Vidal Bramfeld-Software                             //
-// Last modified:  2015-04-01                                                 //
+// Last modified:  2016-02-28                                                 //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -21,23 +21,13 @@ private:
    Filter* recipient_;
    
 public:
-   Filter ()										{ recipient_ = 0; }
-   virtual ~Filter ()							{ }
+   Filter ()														{ recipient_ = 0; }
+   virtual ~Filter ()											{ }
    
-   void chain (Filter* nxt)					{ recipient_ = nxt; }
-   virtual bool consume (Buffer& buf)		{ return produce (buf); }
-   virtual bool produce (Buffer& buf)		{ return (recipient_ && recipient_->consume (buf)); }
-   virtual void flush (int flg)				{ if (recipient_) recipient_->flush (flg); }
-};
-
-class CountFilter : public Filter 
-{
-private:
-   intmax_t& counter_;
-   
-public:
-   CountFilter (intmax_t& p) : counter_(p)	   { }
-   virtual bool consume (Buffer& buf)		      { counter_ += buf.length (); return produce (buf); }
+   void chain (Filter* nxt)									{ recipient_ = nxt; }
+   virtual bool consume (Buffer& buf, int flg = 0)		{ return produce (buf, flg); }
+   virtual bool produce (Buffer& buf, int flg = 0)		{ return (recipient_ && recipient_->consume (buf, flg)); }
+   virtual void flush (int flg)								{ if (recipient_) recipient_->flush (flg); }
 };
 
 class BufferedFilter : public Filter

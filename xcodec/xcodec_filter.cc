@@ -25,6 +25,7 @@
 
 #include <common/buffer.h>
 #include <common/endian.h>
+#include <common/count_filter.h>
 #include <event/event_system.h>
 #include <programs/wanproxy/wanproxy.h>
 #include "xcodec_filter.h"
@@ -35,7 +36,7 @@
 // Description:    instantiation of encoder/decoder in a data filter pair     //
 // Project:        WANProxy XTech                                             //
 // Adapted by:     Andreu Vidal Bramfeld-Software                             //
-// Last modified:  2015-08-31                                                 //
+// Last modified:  2016-02-28                                                 //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -119,7 +120,7 @@
 
 // Encoding
 
-bool EncodeFilter::consume (Buffer& buf)
+bool EncodeFilter::consume (Buffer& buf, int flg)
 {
 	Buffer enc, output;
 
@@ -143,18 +144,24 @@ bool EncodeFilter::consume (Buffer& buf)
 			return false;
 	}
 
-	encoder_->encode (enc, buf, waiting_);
+	encoder_->encode (enc, buf);
+	
+	if (! (flg & TO_BE_CONTINUED))
+	{
+		if (waiting_)
+		{
+			if (wait_action_)
+				wait_action_->cancel ();
+			wait_action_ = event_system.track (150, StreamModeWait, callback (this, &EncodeFilter::on_read_timeout));
+		}
+		else
+			encoder_->flush (enc);
+	}
+	
 	while (! enc.empty ())
 		encode_frame (enc, output);
    
-	if (waiting_)
-	{
-		if (wait_action_)
-			wait_action_->cancel ();
-		wait_action_ = event_system.track (150, StreamModeWait, callback (this, &EncodeFilter::on_read_timeout));
-	}
-
-   return (! output.empty () ? produce (output) : true);
+   return (! output.empty () ? produce (output, flg) : true);
 }
 	
 void EncodeFilter::flush (int flg)
@@ -165,10 +172,12 @@ void EncodeFilter::flush (int flg)
 	{
 		flushing_ = true;
 		flush_flags_ |= flg;
+		if (wait_action_)
+			wait_action_->cancel (), wait_action_ = 0;
 		if (! sent_eos_)
 		{
 			Buffer enc, output;
-			if (waiting_ && encoder_ && encoder_->flush (enc))
+			if (encoder_ && encoder_->flush (enc))
 				encode_frame (enc, output);
 			output.append (XCODEC_PIPE_OP_EOS);
 			sent_eos_ = produce (output);
@@ -200,7 +209,7 @@ void EncodeFilter::on_read_timeout (Event e)
 		wait_action_->cancel (), wait_action_ = 0;
 
 	Buffer enc, output;
-	if (encoder_ && encoder_->flush (enc))
+	if (! flushing_ && encoder_ && encoder_->flush (enc))
 	{
 		encode_frame (enc, output);
 		produce (output);
@@ -209,7 +218,7 @@ void EncodeFilter::on_read_timeout (Event e)
 
 // Decoding
 	
-bool DecodeFilter::consume (Buffer& buf)
+bool DecodeFilter::consume (Buffer& buf, int flg)
 {
    if (! upstream_) 
    {
@@ -412,7 +421,7 @@ bool DecodeFilter::consume (Buffer& buf)
 		if (! output.empty ()) 
       {
 			ASSERT(log_, ! flushing_);
-			if (! produce (output))
+			if (! produce (output, flg))
 				return false;
 		} 
       else 
@@ -512,7 +521,7 @@ void DecodeFilter::flush (int flg)
 	if (! frame_buffer_.empty ())
 		DEBUG(log_) << "Flushing decoder with frame data outstanding.";
 	if (! upflushed_ && upstream_)
-      upstream_->flush (XCODEC_PIPE_OP_EOS_ACK);
+      upflushed_ = true, upstream_->flush (XCODEC_PIPE_OP_EOS_ACK);
 	Filter::flush (flush_flags_);
 }
 

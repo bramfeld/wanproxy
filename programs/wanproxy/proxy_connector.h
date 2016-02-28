@@ -26,8 +26,10 @@
 #ifndef	PROGRAMS_WANPROXY_PROXY_CONNECTOR_H
 #define	PROGRAMS_WANPROXY_PROXY_CONNECTOR_H
 
-#define REQUEST_CHAIN_READY	0x10000
-#define RESPONSE_CHAIN_READY	0x20000
+#define REQUEST_CHAIN_FLUSHING	0x10000
+#define RESPONSE_CHAIN_FLUSHING	0x20000
+#define REQUEST_CHAIN_READY		0x40000
+#define RESPONSE_CHAIN_READY		0x80000
 
 #include <common/filter.h>
 #include <event/action.h>
@@ -41,14 +43,14 @@
 // Description:    carries data between endpoints through a filter chain      //
 // Project:        WANProxy XTech                                             //
 // Adapted by:     Andreu Vidal Bramfeld-Software                             //
-// Last modified:  2015-08-31                                                 //
+// Last modified:  2016-02-28                                                 //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
 class ProxyConnector : public Filter
 {
 	LogHandle log_;
-	WANProxyCodec* interface_codec_;
+	WANProxyCodec* local_codec_;
 	WANProxyCodec* remote_codec_;
 	Socket* local_socket_;
 	Socket* remote_socket_;
@@ -59,7 +61,8 @@ class ProxyConnector : public Filter
 	Action* stop_action_;
 	Action* request_action_;
 	Action* response_action_;
-   int chain_ready_;
+	Action* close_action_;
+   int flushing_;
 
 public:
 	ProxyConnector (const std::string&, WANProxyCodec*, WANProxyCodec*, 
@@ -71,7 +74,7 @@ public:
 	void on_request_data (Event e);
 	void on_response_data (Event e);
    virtual void flush (int flg);
-   void conclude ();
+   void conclude (Event e);
 };
 
 #endif /* !PROGRAMS_WANPROXY_PROXY_CONNECTOR_H */

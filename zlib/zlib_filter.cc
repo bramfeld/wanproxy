@@ -4,7 +4,7 @@
 // Description:    data filters for zlib inflate/deflate streams              //
 // Project:        WANProxy XTech                                             //
 // Author:         Andreu Vidal Bramfeld-Software                             //
-// Last modified:  2015-04-01                                                 //
+// Last modified:  2016-02-28                                                 //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -32,7 +32,7 @@ DeflateFilter::~DeflateFilter ()
 		ERROR(log_) << "Deflate stream did not end cleanly.";
 }
 
-bool DeflateFilter::consume (Buffer& buf)
+bool DeflateFilter::consume (Buffer& buf, int flg)
 {
 	const BufferSegment* seg;
 	int cnt = 0, i = 0, rv;
@@ -64,7 +64,7 @@ bool DeflateFilter::consume (Buffer& buf)
 		}
 	}
 	
-	return produce (pending_);
+	return produce (pending_, flg);
 }
 
 void DeflateFilter::flush (int flg)
@@ -108,7 +108,7 @@ InflateFilter::~InflateFilter()
 		ERROR(log_) << "Inflate stream did not end cleanly.";
 }
 
-bool InflateFilter::consume (Buffer& buf)
+bool InflateFilter::consume (Buffer& buf, int flg)
 {
 	const BufferSegment* seg;
 	int cnt = 0, i = 0, rv;
@@ -140,7 +140,7 @@ bool InflateFilter::consume (Buffer& buf)
 		}
 	}
 	
-	return produce (pending_);
+	return produce (pending_, flg);
 }
 
 void InflateFilter::flush (int flg)

@@ -33,7 +33,7 @@
 // Description:    listens on a port spawning a connector for each client     //
 // Project:        WANProxy XTech                                             //
 // Adapted by:     Andreu Vidal Bramfeld-Software                             //
-// Last modified:  2015-08-31                                                 //
+// Last modified:  2016-02-28                                                 //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -45,7 +45,7 @@ ProxyListener::ProxyListener (const std::string& name,
 										SocketAddressFamily remote_family,
 										const std::string& remote_address,
 										bool cln, bool ssh)
- : log_("/wanproxy/proxy/" + name + "/listener"),
+ : log_("/wanproxy/" + name + "/listener"),
    name_(name),
    local_codec_(local_codec),
    remote_codec_(remote_codec),

@@ -4,7 +4,7 @@
 // Description:    a filter to write into a target device                     //
 // Project:        WANProxy XTech                                             //
 // Author:         Andreu Vidal Bramfeld-Software                             //
-// Last modified:  2015-04-01                                                 //
+// Last modified:  2016-02-28                                                 //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -22,7 +22,7 @@ SinkFilter::~SinkFilter ()
 	if (write_action_) write_action_->cancel (); 
 }
 
-bool SinkFilter::consume (Buffer& buf)
+bool SinkFilter::consume (Buffer& buf, int flg)
 {
 	if (! sink_ || closing_)
 		return false;
