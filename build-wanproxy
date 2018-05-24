@@ -1,0 +1,4 @@
+cd programs/wanproxy
+mkdir -p bin
+make NDEBUG=1
+
