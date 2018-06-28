@@ -4,7 +4,7 @@
 #SUBDIR+=event
 #SUBDIR+=http
 #SUBDIR+=io
-SUBDIR+=programs
+SUBDIR+=proxy
 #SUBDIR+=ssh
 #SUBDIR+=xcodec
 #SUBDIR+=zlib

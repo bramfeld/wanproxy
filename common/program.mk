@@ -76,7 +76,7 @@ endif
 CFLAGS+=-Wno-system-headers
 CFLAGS+=-Wno-unused-parameter
 CFLAGS+=-Wno-switch
-CFLAGS+=-Wno-uninitialized
+#CFLAGS+=-Wno-uninitialized
 CFLAGS+=-Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings -Wshadow -Wcast-align -Wchar-subscripts -Wreorder
 #CFLAGS+=-Winline
 CXXFLAGS+=-Wno-deprecated

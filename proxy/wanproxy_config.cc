@@ -140,21 +140,24 @@ WANProxyConfig::parse_set(std::deque<std::string>& tokens)
 }
 
 bool
-WANProxyConfig::configure(const std::string& name)
+WANProxyConfig::read_file(const std::string& path)
 {
-	if (config_ != NULL) {
-		ERROR(log_) << "WANProxy already configured.";
-		return (false);
-	}
+	delete config_;
+	config_ = NULL;
 
 	INFO(log_) << "Configuring WANProxy.";
 
+	if (path.empty()) {
+		ERROR(log_) << "No file name specified";
+		return false;
+	}
+
 	std::fstream in;
-	in.open(name.c_str(), std::ios::in);
+	in.open(path.c_str(), std::ios::in);
 
 	if (!in.good()) {
-		ERROR(log_) << "Could not open file: " << name;
-		return (false);
+		ERROR(log_) << "Could not open file: " << path;
+		return false;
 	}
 
 	config_ = new Config();
@@ -187,17 +190,15 @@ WANProxyConfig::configure(const std::string& name)
 		}
 		if (tokens.empty())
 			continue;
-		ASSERT(log_, !tokens.empty());
 		if (!parse(tokens)) {
 			ERROR(log_) << "Error in configuration directive: " << line;
-
 			delete config_;
 			config_ = NULL;
-
-			return (false);
+			return false;
 		}
 		ASSERT(log_, tokens.empty());
 	}
 
-	return (true);
+	return true;
 }
+

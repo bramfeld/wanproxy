@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2012 Juli Mallett. All rights reserved.
+ * Copyright (c) 2008-2011 Juli Mallett. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -23,89 +23,37 @@
  * SUCH DAMAGE.
  */
 
-#include <unistd.h>
-#include <common/log.h>
-#include <event/event_system.h>
-#include "wanproxy.h"
+#ifndef	PROGRAMS_WANPROXY_WANPROXY_CONFIG_H
+#define	PROGRAMS_WANPROXY_WANPROXY_CONFIG_H
 
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
-// File:           wanproxy.cc                                                //
-// Description:    session start and global application management            //
+// File:           wanproxy_config.h                                          //
+// Description:    high-level configuration parser                            //
 // Project:        WANProxy XTech                                             //
 // Adapted by:     Andreu Vidal Bramfeld-Software                             //
-// Last modified:  2016-02-28                                                 //
+// Last modified:  2015-04-01                                                 //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-#define PROGRAM_VERSION		"3.02"
+class Config;
 
-WanProxyCore wanproxy;	
+class WANProxyConfig {
+	LogHandle log_;
+	Config *config_;
+public:
+	WANProxyConfig(void);
+	~WANProxyConfig();
 
-static void usage(void);
+private:
+	bool parse(std::deque<std::string>&);
 
+	void parse_activate(std::deque<std::string>&);
+	void parse_create(std::deque<std::string>&);
+	void parse_set(std::deque<std::string>&);
 
-int main (int argc, char *argv[])
-{
-	std::string configfile;
-	bool quiet, verbose;
-	int ch;
+public:
+	bool read_file(const std::string&);
+};
 
-	quiet = verbose = false;
-
-	INFO("/wanproxy") << "WANProxy MT " << PROGRAM_VERSION;
-	INFO("/wanproxy") << "Copyright (c) 2008-2013 WANProxy.org";
-	INFO("/wanproxy") << "Copyright (c) 2013-2015 Bramfeld-Software";
-	INFO("/wanproxy") << "All rights reserved.";
-
-	while ((ch = getopt(argc, argv, "c:qv")) != -1) 
-	{
-		switch (ch) 
-		{
-		case 'c':
-			configfile = optarg;
-			break;
-		case 'q':
-			quiet = true;
-			break;
-		case 'v':
-			verbose = true;
-			break;
-		default:
-			usage();
-		}
-	}
-
-	if (configfile.empty ())
-		usage();
-
-	if (quiet && verbose)
-		usage();
-
-	if (verbose)
-		Log::mask (".?", Log::Debug);
-	else if (quiet)
-		Log::mask (".?", Log::Error);
-	else
-		Log::mask (".?", Log::Info);
-
-	if (! wanproxy.configure (configfile)) 
-	{
-		ERROR("/wanproxy") << "Could not configure proxies.";
-		return (1);
-	}
-	
-	wanproxy.launch_listener ();
-
-	event_system.run ();
-	
-	wanproxy.terminate ();
-	
-	return 0;
-}
-
-static void usage(void)
-{
-	INFO("/wanproxy/usage") << "wanproxy [-q | -v] -c configfile";
-	exit(1);
-}
+#endif /* !PROGRAMS_WANPROXY_WANPROXY_CONFIG_H */

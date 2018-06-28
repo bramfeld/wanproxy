@@ -27,7 +27,6 @@
 #include <common/endian.h>
 #include <common/count_filter.h>
 #include <event/event_system.h>
-#include <programs/wanproxy/wanproxy.h>
 #include "xcodec_filter.h"
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -239,7 +238,7 @@ bool DecodeFilter::consume (Buffer& buf, int flg)
 				ERROR(log_) << "Got <HELLO> twice.";
 				return false;
 			}
-			else
+			else if (codec_)
 			{
 		      uint8_t len;
 		      if (pending_.length() < sizeof op + sizeof len)
@@ -266,7 +265,7 @@ bool DecodeFilter::consume (Buffer& buf, int flg)
 		      pending_.skip (sizeof mb);
 
 				if (! (decoder_cache_ = wanproxy.find_cache (uuid)))
-					decoder_cache_ = wanproxy.add_cache (uuid, mb);
+					decoder_cache_ = wanproxy.add_cache (codec_->cache_type_, codec_->cache_path_, mb, uuid);
 
 		      ASSERT(log_, decoder_ == NULL);
 				if (decoder_cache_)

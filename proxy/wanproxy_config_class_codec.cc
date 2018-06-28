@@ -61,10 +61,7 @@ WANProxyConfigClassCodec::Instance::activate(const ConfigObject *co)
 		 */
 		if (cache_path_.empty())
 		{
-			if (wanproxy.cache_uuid_.is_valid ())
-				uuid = wanproxy.cache_uuid_;
-			else
-				uuid.generate();
+			uuid.generate();
 		}
 		else
 		{   
@@ -76,13 +73,13 @@ WANProxyConfigClassCodec::Instance::activate(const ConfigObject *co)
 			}
 		}
 
-		wanproxy.cache_type_ = cache_type_;
-		wanproxy.cache_path_ = cache_path_;
-		wanproxy.cache_size_ = local_size_;
-		wanproxy.cache_uuid_ = uuid;
+		codec_.cache_type_ = cache_type_;
+		codec_.cache_path_ = cache_path_;
+		codec_.cache_size_ = local_size_;
+		codec_.cache_uuid_ = uuid;
 
 		if (! (cache = wanproxy.find_cache (uuid)))
-			cache = wanproxy.add_cache (uuid, local_size_);
+			cache = wanproxy.add_cache (cache_type_, cache_path_, local_size_, uuid);
 		codec_.xcache_ = cache;
 		break;
 	case WANProxyConfigCodecNone:

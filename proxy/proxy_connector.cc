@@ -154,8 +154,8 @@ bool ProxyConnector::build_chains (WANProxyCodec* cdc1, WANProxyCodec* cdc2, Soc
 		if (cdc1->xcache_) 
       {
 			EncodeFilter* enc; DecodeFilter* dec;
-			request_chain_.append ((dec = new DecodeFilter ("/wanproxy/" + cdc1->name_ + "/dec", cdc1->xcache_)));
-			response_chain_.prepend ((enc = new EncodeFilter ("/wanproxy/" + cdc1->name_ + "/enc", cdc1->xcache_, 1)));
+			request_chain_.append ((dec = new DecodeFilter ("/wanproxy/" + cdc1->name_ + "/dec", cdc1)));
+			response_chain_.prepend ((enc = new EncodeFilter ("/wanproxy/" + cdc1->name_ + "/enc", cdc1, 1)));
          dec->set_upstream (enc);
 		}
 
@@ -177,8 +177,8 @@ bool ProxyConnector::build_chains (WANProxyCodec* cdc1, WANProxyCodec* cdc2, Soc
 		if (cdc2->xcache_) 
       {
 			EncodeFilter* enc; DecodeFilter* dec;
-			request_chain_.append ((enc = new EncodeFilter ("/wanproxy/" + cdc2->name_ + "/enc", cdc2->xcache_)));
-			response_chain_.prepend ((dec = new DecodeFilter ("/wanproxy/" + cdc2->name_ + "/dec", cdc2->xcache_)));
+			request_chain_.append ((enc = new EncodeFilter ("/wanproxy/" + cdc2->name_ + "/enc", cdc2)));
+			response_chain_.prepend ((dec = new DecodeFilter ("/wanproxy/" + cdc2->name_ + "/dec", cdc2)));
          dec->set_upstream (enc);
 		}
 

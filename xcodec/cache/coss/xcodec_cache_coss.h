@@ -79,7 +79,7 @@ using namespace std;
 #define CACHE_SIGNATURE				0xF150E964
 #define CACHE_VERSION				2
 #define STRIPE_SEGMENT_COUNT		512		// segments of XCODEC_SEGMENT_LENGTH per stripe (must fit into 16 bits)
-#define LOADED_STRIPE_COUNT		4			// number of stripes held in memory (must be greater than 1)
+#define LOADED_STRIPE_COUNT		16			// number of stripes held in memory (must be greater than 1)
 #define CACHE_BASIC_SIZE			1024		// MB
 
 #define CACHE_ALIGNEMENT			4096
@@ -88,6 +88,8 @@ using namespace std;
 #define ROUND_UP(N, S) 				((((N) + (S) - 1) / (S)) * (S))
 #define HEADER_ALIGNED_SIZE		ROUND_UP(HEADER_ARRAY_SIZE + METADATA_SIZE, CACHE_ALIGNEMENT)
 #define METADATA_PADDING			(HEADER_ALIGNED_SIZE - HEADER_ARRAY_SIZE - METADATA_SIZE)
+
+#define USING_XCODEC_CACHE_RECENT_WINDOW
 
 struct COSSIndexEntry 
 {

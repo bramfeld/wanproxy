@@ -20,11 +20,13 @@
 #include <xcodec/xcodec_hash.h>
 #include <xcodec/xcodec_encoder.h>
 #include <xcodec/xcodec_decoder.h>
+#include <proxy/wanproxy.h>
 
 class EncodeFilter : public BufferedFilter
 {
 private:
-   XCodecCache* cache_;
+	WANProxyCodec* codec_;
+	XCodecCache* cache_;
 	XCodecEncoder* encoder_;
 	Action* wait_action_;
 	bool waiting_;
@@ -32,9 +34,10 @@ private:
 	bool eos_ack_;
    
 public:
-	EncodeFilter (const LogHandle& log, XCodecCache* cc, int flg = 0) : BufferedFilter (log) 
+	EncodeFilter (const LogHandle& log, WANProxyCodec* cdc, int flg = 0) : BufferedFilter (log) 
 	{ 
-		cache_ = cc; encoder_ = 0; wait_action_ = 0; waiting_ = (flg & 1); sent_eos_ = eos_ack_ = false;
+		codec_ = cdc; cache_ = (cdc ? cdc->xcache_ : 0); encoder_ = 0; 
+		wait_action_ = 0; waiting_ = (flg & 1); sent_eos_ = eos_ack_ = false;
 	}
 	
 	virtual ~EncodeFilter ()  
@@ -55,7 +58,8 @@ private:
 class DecodeFilter : public LogisticFilter
 {
 private:
-   XCodecCache* encoder_cache_;
+	WANProxyCodec* codec_;
+	XCodecCache* encoder_cache_;
 	XCodecDecoder* decoder_;
 	XCodecCache* decoder_cache_;
 	std::set<uint64_t> unknown_hashes_;
@@ -66,9 +70,9 @@ private:
 	bool upflushed_;
    
 public:
-	DecodeFilter (const LogHandle& log, XCodecCache* cc) : LogisticFilter (log) 
+	DecodeFilter (const LogHandle& log, WANProxyCodec* cdc) : LogisticFilter (log) 
    { 
-      encoder_cache_ = cc; decoder_ = 0; decoder_cache_ = 0;   
+      codec_ = cdc; encoder_cache_ = (cdc ? cdc->xcache_ : 0); decoder_ = 0; decoder_cache_ = 0;   
       received_eos_ = sent_eos_ack_ = received_eos_ack_ = upflushed_ = false; 
    }
 	

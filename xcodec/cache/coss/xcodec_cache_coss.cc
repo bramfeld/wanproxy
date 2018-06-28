@@ -91,13 +91,11 @@ XCodecCacheCOSS::~XCodecCacheCOSS()
 
 	delete[] directory_;
 
-	/*
 	INFO(log_) << "Stats: ";
 	INFO(log_) << "\tLookups=" << stats_.lookups;
 	INFO(log_) << "\tHits=" << (stats_.found_1 + stats_.found_2) << " (" << stats_.found_1 << " + " << stats_.found_2 << ")";
    if (stats_.lookups > 0)
       INFO(log_) << "\tHit ratio=" << ((stats_.found_1 + stats_.found_2) * 100) / stats_.lookups << "%";
-	*/
 
 	DEBUG(log_) << "Closing coss file: " << file_path_;
 	DEBUG(log_) << "Serial: " << serial_number_;
@@ -195,13 +193,15 @@ bool XCodecCacheCOSS::lookup (const uint64_t& hash, Buffer& buf)
 	int slot;
 
 	stats_.lookups++;
-	
+
+#ifdef USING_XCODEC_CACHE_RECENT_WINDOW
 	if ((data = find_recent (hash)))
 	{
 		buf.append (data, XCODEC_SEGMENT_LENGTH);
 		stats_.found_1++;
 		return true;
 	}
+#endif
 		
 	if (! (entry = cache_index_.lookup (hash)))
 		return false;
@@ -227,7 +227,9 @@ bool XCodecCacheCOSS::lookup (const uint64_t& hash, Buffer& buf)
 	stripe_[slot].header.flags[entry->position] |= 3;
 
 	data = stripe_[slot].segment_array[entry->position].bytes;
+#ifdef USING_XCODEC_CACHE_RECENT_WINDOW
 	remember (hash, data);
+#endif
 	buf.append (data, XCODEC_SEGMENT_LENGTH);
 	stats_.found_2++;
 	return true;
@@ -337,7 +339,9 @@ void XCodecCacheCOSS::detach_stripe (int slot)
 		{
 			if (stripe_[slot].header.flags[i] & 1)
 			{
+#ifdef USING_XCODEC_CACHE_RECENT_WINDOW
 				forget (stripe_[slot].header.hash_array[i]);
+#endif
 				stripe_[slot].header.flags[i] &= ~1;
 			}
 		}

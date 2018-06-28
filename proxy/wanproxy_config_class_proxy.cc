@@ -94,16 +94,18 @@ WANProxyConfigClassProxy::Instance::activate(const ConfigObject *co)
 	
 	if (role_ == WANProxyConfigProxyRoleUndefined && ! interface_codec && peer_codec)
 		role_ = WANProxyConfigProxyRoleClient;
-
-	wanproxy.proxy_name_ = co->name_;
-	wanproxy.proxy_client_ = (role_ == WANProxyConfigProxyRoleClient);
-	wanproxy.proxy_secure_ = (type_ == WANProxyConfigProxyTypeSSHSSH);
-	wanproxy.local_protocol_ = interface->family_;
-	wanproxy.local_address_ = '[' + interface->host_ + ']' + ':' + interface->port_;
-	wanproxy.local_codec_ = (interface_codec ? *interface_codec : WANProxyCodec ());
-	wanproxy.remote_protocol_ = peer->family_;
-	wanproxy.remote_address_ = '[' + peer->host_ + ']' + ':' + peer->port_;
-	wanproxy.remote_codec_ = (peer_codec ? *peer_codec : WANProxyCodec ());
-
+		
+	WanProxyInstance ins;
+	ins.proxy_name_ = co->name_;
+	ins.proxy_client_ = (role_ == WANProxyConfigProxyRoleClient);
+	ins.proxy_secure_ = (type_ == WANProxyConfigProxyTypeSSHSSH);
+	ins.local_protocol_ = interface->family_;
+	ins.local_address_ = '[' + interface->host_ + ']' + ':' + interface->port_;
+	ins.local_codec_ = (interface_codec ? *interface_codec : WANProxyCodec ());
+	ins.remote_protocol_ = peer->family_;
+	ins.remote_address_ = '[' + peer->host_ + ']' + ':' + peer->port_;
+	ins.remote_codec_ = (peer_codec ? *peer_codec : WANProxyCodec ());
+	wanproxy.add_proxy (ins.proxy_name_, ins);
+	
 	return (true);
 }

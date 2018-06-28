@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2013 Juli Mallett. All rights reserved.
+ * Copyright (c) 2008-2012 Juli Mallett. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -23,43 +23,89 @@
  * SUCH DAMAGE.
  */
 
-#ifndef	PROGRAMS_WANPROXY_WANPROXY_CODEC_H
-#define	PROGRAMS_WANPROXY_WANPROXY_CODEC_H
+#include <unistd.h>
+#include <common/log.h>
+#include <event/event_system.h>
+#include "wanproxy.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
-// File:           wanproxy_codec.h                                           //
-// Description:    control parameters for each connection endpoint            //
+// File:           wanproxy.cc                                                //
+// Description:    session start and global application management            //
 // Project:        WANProxy XTech                                             //
 // Adapted by:     Andreu Vidal Bramfeld-Software                             //
-// Last modified:  2015-08-31                                                 //
+// Last modified:  2016-02-28                                                 //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
-class XCodecCache;
+#define PROGRAM_VERSION		"3.0.5"
 
-struct WANProxyCodec {
-	std::string name_;
-	XCodecCache* xcache_;
-	bool compressor_;
-	char compressor_level_;
-   bool counting_;
-	intmax_t request_input_bytes_;
-	intmax_t request_output_bytes_;
-	intmax_t response_input_bytes_;
-	intmax_t response_output_bytes_;
+WanProxyCore wanproxy;	
 
-	WANProxyCodec(void)
-	: name_(""),
-	  xcache_(NULL),
-	  compressor_(false),
-	  compressor_level_(0),
-     counting_(false),
-	  request_input_bytes_(0),
-	  request_output_bytes_(0),
-	  response_input_bytes_(0),
-	  response_output_bytes_(0)
-	{ }
-};
+static void usage(void);
 
-#endif /* !PROGRAMS_WANPROXY_WANPROXY_CODEC_H */
+
+int main (int argc, char *argv[])
+{
+	std::string configfile;
+	bool quiet, verbose;
+	int ch;
+
+	quiet = verbose = false;
+
+	INFO("/wanproxy") << "WANProxy MT " << PROGRAM_VERSION;
+	INFO("/wanproxy") << "Copyright (c) 2008-2013 WANProxy.org";
+	INFO("/wanproxy") << "Copyright (c) 2013-2018 Bramfeld-Software";
+	INFO("/wanproxy") << "All rights reserved.";
+
+	while ((ch = getopt(argc, argv, "c:qv")) != -1) 
+	{
+		switch (ch) 
+		{
+		case 'c':
+			configfile = optarg;
+			break;
+		case 'q':
+			quiet = true;
+			break;
+		case 'v':
+			verbose = true;
+			break;
+		default:
+			usage();
+		}
+	}
+
+	if (configfile.empty ())
+		usage();
+
+	if (quiet && verbose)
+		usage();
+
+	if (verbose)
+		Log::mask (".?", Log::Debug);
+	else if (quiet)
+		Log::mask (".?", Log::Error);
+	else
+		Log::mask (".?", Log::Info);
+
+	if (! wanproxy.configure (configfile)) 
+	{
+		ERROR("/wanproxy") << "Could not configure proxies.";
+		wanproxy.terminate ();
+		return 1;
+	}
+	
+	event_system.run ();
+	
+	wanproxy.terminate ();
+	
+	return 0;
+}
+
+static void usage(void)
+{
+	INFO("/wanproxy/usage") << "wanproxy [-q | -v] -c configfile";
+	exit(1);
+}
+
