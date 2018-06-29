@@ -91,11 +91,10 @@ XCodecCacheCOSS::~XCodecCacheCOSS()
 
 	delete[] directory_;
 
-	INFO(log_) << "Stats: ";
-	INFO(log_) << "\tLookups=" << stats_.lookups;
-	INFO(log_) << "\tHits=" << (stats_.found_1 + stats_.found_2) << " (" << stats_.found_1 << " + " << stats_.found_2 << ")";
-   if (stats_.lookups > 0)
-      INFO(log_) << "\tHit ratio=" << ((stats_.found_1 + stats_.found_2) * 100) / stats_.lookups << "%";
+	INFO(log_) << "Cache statistics: ";
+	INFO(log_) << "Lookups: " << stats_.lookups;
+	INFO(log_) << "Matches: " << (stats_.found_1 + stats_.found_2) << " (" << stats_.found_1 << " + " << stats_.found_2 << ")";
+	INFO(log_) << "File: " << file_path_;
 
 	DEBUG(log_) << "Closing coss file: " << file_path_;
 	DEBUG(log_) << "Serial: " << serial_number_;

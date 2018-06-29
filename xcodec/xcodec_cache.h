@@ -43,6 +43,8 @@
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 
+#define USING_XCODEC_CACHE_RECENT_WINDOW
+
 #define XCODEC_WINDOW_COUNT  64  // must be binary
 
 /*
@@ -89,17 +91,21 @@ class XCodecCache
 private:
 	UUID uuid_;
 	size_t size_;
+#ifdef USING_XCODEC_CACHE_RECENT_WINDOW
 	struct WindowItem {uint64_t hash; const uint8_t* data;};
 	WindowItem window_[XCODEC_WINDOW_COUNT];
 	unsigned cursor_;
+#endif
 
 protected:
 	XCodecCache (const UUID& uuid, size_t size)
 	: uuid_(uuid),
 	  size_(size)
 	{
+#ifdef USING_XCODEC_CACHE_RECENT_WINDOW
 		memset (window_, 0, sizeof window_);
 		cursor_ = 0;
+#endif
 	}
 
 public:
@@ -119,6 +125,7 @@ public:
 	virtual void enter (const uint64_t& hash, const Buffer& buf, unsigned off) = 0;
 	virtual bool lookup (const uint64_t& hash, Buffer& buf) = 0;
 
+#ifdef USING_XCODEC_CACHE_RECENT_WINDOW
 protected:	
 	void remember (const uint64_t& hash, const uint8_t* data)
 	{
@@ -148,6 +155,7 @@ protected:
 			if (w->hash == hash)
 				w->hash = 0;
 	}
+#endif
 };
 
 
@@ -181,17 +189,21 @@ public:
 
 	bool lookup (const uint64_t& hash, Buffer& buf)
 	{
+#ifdef USING_XCODEC_CACHE_RECENT_WINDOW
 		const uint8_t* data;
 		if ((data = find_recent (hash)))
 		{
 			buf.append (data, XCODEC_SEGMENT_LENGTH);
 			return true;
 		}
+#endif
 		segment_hash_map_t::const_iterator it = segment_hash_map_.find (hash);
 		if (it != segment_hash_map_.end ())
 		{
 			buf.append (it->second, XCODEC_SEGMENT_LENGTH);
+#ifdef USING_XCODEC_CACHE_RECENT_WINDOW
 			remember (hash, it->second);
+#endif
 			return true;
 		}
 		return false;
